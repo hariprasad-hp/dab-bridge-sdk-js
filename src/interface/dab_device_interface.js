@@ -53,15 +53,28 @@ export class DabDeviceInterface {
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_LAUNCH_WITH_CONTENT_TOPIC}`, this.launchWithContent),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_GET_STATE_TOPIC}`, this.getAppState),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_EXIT_TOPIC}`, this.exitApp),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_INSTALL_TOPIC}`, this.installApp),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_UNINSTALL_TOPIC}`, this.uninstallApp),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_CLEAR_DATA_TOPIC}`, this.clearAppData),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_INSTALL_FROM_APP_STORE_TOPIC}`, this.installAppFromStore),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_INFO_TOPIC}`, this.deviceInfo),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_RESTART_TOPIC}`, this.restartDevice),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_LIST_TOPIC}`, this.listSystemSettings),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_GET_TOPIC}`, this.getSystemSettings),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_SET_TOPIC}`, this.setSystemSettings),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_POWER_MODE_GET_TOPIC}`, this.getPowerMode),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_POWER_MODE_SET_TOPIC}`, this.setPowerMode),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_FACTORY_RESET_TOPIC}`, this.factoryReset),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_NETWORK_RESET_TOPIC}`, this.networkReset),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_LOGS_START_COLLECTION_TOPIC}`, this.startSystemLogCollection),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_LOGS_STOP_COLLECTION_TOPIC}`, this.stopSystemLogCollection),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.INPUT_KEY_LIST_TOPIC}`, this.listSupportedKeys),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.INPUT_KEY_PRESS_TOPIC}`, this.keyPress),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.INPUT_LONG_KEY_PRESS_TOPIC}`, this.keyPressLong),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_CAPTURE_IMAGE}`, this.outputImage),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_SEARCH_TOPIC}`, this.searchContent),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_RECOMMENDATIONS_TOPIC}`, this.listContentRecommendations),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_OPEN_TOPIC}`, this.openContent),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_TELEMETRY_START_TOPIC}`, this.startDeviceTelemetry),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_TELEMETRY_STOP_TOPIC}`, this.stopDeviceTelemetry),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APP_TELEMETRY_START_TOPIC}`, this.startAppTelemetry),
@@ -119,7 +132,7 @@ export class DabDeviceInterface {
     }
 
     version() {
-        return {status: 200, versions: ["2.0"]};
+        return {status: 200, versions: ["2.0", "2.1"]};
     }
 
     /**
@@ -327,12 +340,129 @@ export class DabDeviceInterface {
     }
 
     /**
+     * Installs an application package.
+     * @abstract
+     * @param {Object} data - request object
+     * @param {string} data.appId - application id to install
+     * @param {string} data.url - URL of the application package
+     * @param {string} [data.format] - package format
+     * @param {number} [data.timeout] - installation timeout
+     * @returns {Promise<DabResponse>}
+     */
+    async installApp(data) {
+        return {status: 501, error: "Application install not implemented"};
+    }
+
+    /**
+     * Uninstalls an application.
+     * @abstract
+     * @param {Object} data - request object
+     * @param {string} data.appId - application id to uninstall
+     * @returns {Promise<DabResponse>}
+     */
+    async uninstallApp(data) {
+        return {status: 501, error: "Application uninstall not implemented"};
+    }
+
+    /**
+     * Clears application data.
+     * @abstract
+     * @param {Object} data - request object
+     * @param {string} data.appId - application id whose data should be cleared
+     * @returns {Promise<DabResponse>}
+     */
+    async clearAppData(data) {
+        return {status: 501, error: "Application clear data not implemented"};
+    }
+
+    /**
+     * Installs an application from an app store.
+     * @abstract
+     * @param {Object} data - request object
+     * @param {string} data.appId - application id to install
+     * @param {string} [data.appStoreId] - app store id to install from
+     * @returns {Promise<DabResponse>}
+     */
+    async installAppFromStore(data) {
+        return {status: 501, error: "Application install from app store not implemented"};
+    }
+
+    /**
      * Request to restart the device.
      * @abstract
      * @returns {Promise<DabResponse>}
      */
     async restartDevice() {
         return {status: 501, error: "Restart not implemented"};
+    }
+
+    /**
+     * @typedef {Object} PowerModeResponse
+     * @property {number} status - Response status code
+     * @property {"Active"|"Standby"|"Deep Sleep"} powerMode - current power mode
+     */
+
+    /**
+     * Gets the device power mode.
+     * @abstract
+     * @returns {Promise<DabResponse|PowerModeResponse>}
+     */
+    async getPowerMode() {
+        return {status: 501, error: "Power mode get not implemented"};
+    }
+
+    /**
+     * Sets the device power mode.
+     * @abstract
+     * @param {Object} data - request object
+     * @param {"Active"|"Standby"|"Deep Sleep"} data.powerMode - requested power mode
+     * @returns {Promise<DabResponse|PowerModeResponse>}
+     */
+    async setPowerMode(data) {
+        return {status: 501, error: "Power mode set not implemented"};
+    }
+
+    /**
+     * Performs a factory reset.
+     * @abstract
+     * @returns {Promise<DabResponse>}
+     */
+    async factoryReset() {
+        return {status: 501, error: "Factory reset not implemented"};
+    }
+
+    /**
+     * Performs a network reset.
+     * @abstract
+     * @returns {Promise<DabResponse>}
+     */
+    async networkReset() {
+        return {status: 501, error: "Network reset not implemented"};
+    }
+
+    /**
+     * Starts system log collection.
+     * @abstract
+     * @returns {Promise<DabResponse>}
+     */
+    async startSystemLogCollection() {
+        return {status: 501, error: "System log collection start not implemented"};
+    }
+
+    /**
+     * @typedef {Object} StopSystemLogCollectionResponse
+     * @property {number} status - Response status code
+     * @property {string} [logArchive] - log archive chunk or location
+     * @property {number} [remainingChunks] - remaining log archive chunks
+     */
+
+    /**
+     * Stops system log collection.
+     * @abstract
+     * @returns {Promise<DabResponse|StopSystemLogCollectionResponse>}
+     */
+    async stopSystemLogCollection() {
+        return {status: 501, error: "System log collection stop not implemented"};
     }
 
     /**
@@ -479,6 +609,43 @@ export class DabDeviceInterface {
 
     async outputImage() {
         return {status: 501, error: "Not implemented."};
+    }
+
+    /**
+     * @typedef {Object} ContentEntriesResponse
+     * @property {number} status - Response status code
+     * @property {Array.<Object>} entries - content entries
+     */
+
+    /**
+     * Searches content.
+     * @abstract
+     * @param {Object} data - request object
+     * @param {string} data.searchText - search query text
+     * @returns {Promise<DabResponse|ContentEntriesResponse>}
+     */
+    async searchContent(data) {
+        return {status: 501, error: "Content search not implemented"};
+    }
+
+    /**
+     * Lists content recommendations.
+     * @abstract
+     * @returns {Promise<DabResponse|ContentEntriesResponse>}
+     */
+    async listContentRecommendations() {
+        return {status: 501, error: "Content recommendations not implemented"};
+    }
+
+    /**
+     * Opens a content entry.
+     * @abstract
+     * @param {Object} data - request object
+     * @param {string} data.entryId - content entry id to open
+     * @returns {Promise<DabResponse>}
+     */
+    async openContent(data) {
+        return {status: 501, error: "Content open not implemented"};
     }
 
     async voiceList() {
