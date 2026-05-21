@@ -1,4 +1,4 @@
-const { spawn, execSync} = require('child_process');
+import { spawn } from "child_process";
 
 describe("Integration Test of Bridge Device Management Routes", () => {
   let mosquitto_child = null;

@@ -15,6 +15,15 @@
 
 import { MqttClient } from '../lib/mqtt_client/index.js';
 import  * as topics  from './dab_topics.js';
+import {
+    validateContentRecommendationsResponse,
+    validateOpenContentRequest,
+    validateSearchContentRequest,
+    validateSearchContentResponse,
+    validateSystemSettingsGetResponse,
+    validateSystemSettingsListResponse,
+    validateSystemSettingsSetRequest
+} from './dab_validation.js';
 import {getLogger} from "../lib/util.js";
 const logger = getLogger()
 
@@ -55,13 +64,43 @@ export class DabDeviceInterface {
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_EXIT_TOPIC}`, this.exitApp),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_INFO_TOPIC}`, this.deviceInfo),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_RESTART_TOPIC}`, this.restartDevice),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_LIST_TOPIC}`, this.listSystemSettings),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_GET_TOPIC}`, this.getSystemSettings),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_SET_TOPIC}`, this.setSystemSettings),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_LIST_TOPIC}`, this.withValidation(
+                    "listSystemSettings",
+                    this.listSystemSettings,
+                    { response: validateSystemSettingsListResponse }
+                )),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_GET_TOPIC}`, this.withValidation(
+                    "getSystemSettings",
+                    this.getSystemSettings,
+                    { response: validateSystemSettingsGetResponse }
+                )),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_SET_TOPIC}`, this.withValidation(
+                    "setSystemSettings",
+                    this.setSystemSettings,
+                    { request: validateSystemSettingsSetRequest }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.INPUT_KEY_LIST_TOPIC}`, this.listSupportedKeys),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.INPUT_KEY_PRESS_TOPIC}`, this.keyPress),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.INPUT_LONG_KEY_PRESS_TOPIC}`, this.keyPressLong),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_CAPTURE_IMAGE}`, this.outputImage),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_SEARCH_TOPIC}`, this.withValidation(
+                    "searchContent",
+                    this.searchContent,
+                    {
+                        request: validateSearchContentRequest,
+                        response: validateSearchContentResponse
+                    }
+                )),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_RECOMMENDATIONS_TOPIC}`, this.withValidation(
+                    "listContentRecommendations",
+                    this.listContentRecommendations,
+                    { response: validateContentRecommendationsResponse }
+                )),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_OPEN_TOPIC}`, this.withValidation(
+                    "openContent",
+                    this.openContent,
+                    { request: validateOpenContentRequest }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_TELEMETRY_START_TOPIC}`, this.startDeviceTelemetry),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_TELEMETRY_STOP_TOPIC}`, this.stopDeviceTelemetry),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APP_TELEMETRY_START_TOPIC}`, this.startAppTelemetry),
@@ -89,6 +128,29 @@ export class DabDeviceInterface {
         );
 
         return this.client;
+    }
+
+    withValidation(operation, handler, { request, response } = {}) {
+        return async (data) => {
+            if (request) {
+                const requestError = request(data);
+                if (requestError) {
+                    logger.warn(`Validation failed for ${operation} request: ${requestError}`);
+                    return this.dabResponse(400, requestError);
+                }
+            }
+
+            const result = await handler.call(this, data);
+
+            if (response) {
+                const responseError = response(result);
+                if (responseError) {
+                    logger.error(`Validation failed for ${operation} response: ${responseError}`);
+                    return this.dabResponse(500, `Invalid ${operation} response: ${responseError}`);
+                }
+            }
+            return result;
+        };
     }
 
     /**
@@ -478,6 +540,18 @@ export class DabDeviceInterface {
     }
 
     async outputImage() {
+        return {status: 501, error: "Not implemented."};
+    }
+
+    async searchContent(data) {
+        return {status: 501, error: "Not implemented."};
+    }
+
+    async listContentRecommendations() {
+        return {status: 501, error: "Not implemented."};
+    }
+
+    async openContent(data) {
         return {status: 501, error: "Not implemented."};
     }
 

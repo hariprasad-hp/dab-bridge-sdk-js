@@ -1,8 +1,34 @@
 # Device Automation Bus Bridge SDK
 
-This project is a reference template that can be used to develop a DAB Bridge that is compliant with the DAB 2.0 specification.
+This project is a reference template that can be used to develop a DAB Bridge that is compliant with the DAB 2.0 and 2.1 specifications.
 
 More details on the general usage for DAB Bridges can be found in the DAB User Guide.
+
+## DAB 2.1 Schema Support
+
+The SDK includes centralized request/response validation for DAB 2.1 settings and content APIs.
+
+Supported DAB 2.1 settings expansion fields:
+- `brightness`
+- `contrast`
+- `timeZone`
+- `screenSaver`
+- `screenSaverTimeout`
+- `personalizedAds`
+- `highContrastText`
+- `identifierForAdvertising`
+
+Supported DAB 2.1 content operations:
+- `content/search`
+- `content/recommendations`
+- `content/open`
+
+For successful content list/search responses, entries are expected to follow `ContentEntry` shape:
+- `entryId`
+- `appId`
+- `title`
+- `poster`
+- `categories` (must be valid DAB `ContentCategory` values)
 
 ## Structure Overview
 
@@ -120,4 +146,3 @@ mosquitto_pub -t dab/device0/applications/launch -m '{ "appId": "Cobalt" }' -D p
 ```
 mosquitto_pub -t dab/device0/system/settings/list -m '{}' -D publish response-topic "my/response/topic"
 ```
-

@@ -356,6 +356,23 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *       max: int;
      *    },
      *    mute: boolean;
+     *    brightness: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    contrast: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    timeZone: TimeZone [];
+     *    screenSaver: boolean;
+     *    screenSaverTimeout: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    personalizedAds: boolean;
+     *    highContrastText: boolean;
+     *    identifierForAdvertising: boolean;
      *    textToSpeech: boolean;
      * }
      *
@@ -381,7 +398,14 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *    videoInputSource: VideoInputSource;
      *    audioVolume: int;
      *    mute: boolean;
+     *    brightness: int;
+     *    contrast: int;
      *    timeZone: TimeZone;
+     *    screenSaver: boolean;
+     *    screenSaverTimeout: int;
+     *    personalizedAds: boolean;
+     *    highContrastText: boolean;
+     *    identifierForAdvertising: string | null;
      *    textToSpeech: boolean;
      * }
      *
@@ -411,6 +435,38 @@ export class PartnerDabDevice extends DabDeviceInterface {
      * }
      */
     outputImage = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * @param data interface SearchContentRequest extends DabRequest {
+     *    searchText: string;
+     * }
+     * @returns interface SearchContentResponse extends DabResponse {
+     *    entries: ContentEntry [];
+     * }
+     */
+    searchContent = async (data) => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * type ListRecommendationsContentRequest = DabRequest
+     * @returns interface ListRecommendationsResponse extends DabResponse {
+     *    entries: ContentEntry [];
+     * }
+     */
+    listContentRecommendations = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * @param data interface OpenContentRequest extends DabRequest {
+     *    entryId: string;
+     * }
+     * @returns type OpenContentResponse = DabResponse
+     */
+    openContent = async (data) => {
         return this.dabResponse(501, "Not implemented.");
     }
 }
