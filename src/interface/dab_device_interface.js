@@ -15,6 +15,17 @@
 
 import { MqttClient } from '../lib/mqtt_client/index.js';
 import  * as topics  from './dab_topics.js';
+import {
+    validateDeviceInfoResponse,
+    validateInstallAppFromStoreRequest,
+    validateInstallAppRequest,
+    validateOpenContentRequest,
+    validateSearchContentRequest,
+    validateSearchContentResponse,
+    validateSetPowerModeRequest,
+    validateSetPowerModeResponse,
+    validateSetSystemSettingsRequest
+} from './dab_validation.js';
 import {getLogger} from "../lib/util.js";
 const logger = getLogger()
 
@@ -53,17 +64,40 @@ export class DabDeviceInterface {
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_LAUNCH_WITH_CONTENT_TOPIC}`, this.launchWithContent),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_GET_STATE_TOPIC}`, this.getAppState),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_EXIT_TOPIC}`, this.exitApp),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_INSTALL_TOPIC}`, this.installApp),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_INSTALL_TOPIC}`, this.withValidation(
+                    "installApp",
+                    this.installApp,
+                    { request: validateInstallAppRequest }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_UNINSTALL_TOPIC}`, this.uninstallApp),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_CLEAR_DATA_TOPIC}`, this.clearAppData),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_INSTALL_FROM_APP_STORE_TOPIC}`, this.installAppFromStore),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_INFO_TOPIC}`, this.deviceInfo),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.APPLICATIONS_INSTALL_FROM_APP_STORE_TOPIC}`, this.withValidation(
+                    "installAppFromStore",
+                    this.installAppFromStore,
+                    { request: validateInstallAppFromStoreRequest }
+                )),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_INFO_TOPIC}`, this.withValidation(
+                    "deviceInfo",
+                    this.deviceInfo,
+                    { response: validateDeviceInfoResponse }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_RESTART_TOPIC}`, this.restartDevice),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_LIST_TOPIC}`, this.listSystemSettings),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_GET_TOPIC}`, this.getSystemSettings),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_SET_TOPIC}`, this.setSystemSettings),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_SET_TOPIC}`, this.withValidation(
+                    "setSystemSettings",
+                    this.setSystemSettings,
+                    { request: validateSetSystemSettingsRequest }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_POWER_MODE_GET_TOPIC}`, this.getPowerMode),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_POWER_MODE_SET_TOPIC}`, this.setPowerMode),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_POWER_MODE_SET_TOPIC}`, this.withValidation(
+                    "setPowerMode",
+                    this.setPowerMode,
+                    {
+                        request: validateSetPowerModeRequest,
+                        response: validateSetPowerModeResponse
+                    }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_FACTORY_RESET_TOPIC}`, this.factoryReset),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_NETWORK_RESET_TOPIC}`, this.networkReset),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_LOGS_START_COLLECTION_TOPIC}`, this.startSystemLogCollection),
@@ -72,9 +106,20 @@ export class DabDeviceInterface {
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.INPUT_KEY_PRESS_TOPIC}`, this.keyPress),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.INPUT_LONG_KEY_PRESS_TOPIC}`, this.keyPressLong),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_CAPTURE_IMAGE}`, this.outputImage),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_SEARCH_TOPIC}`, this.searchContent),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_SEARCH_TOPIC}`, this.withValidation(
+                    "searchContent",
+                    this.searchContent,
+                    {
+                        request: validateSearchContentRequest,
+                        response: validateSearchContentResponse
+                    }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_RECOMMENDATIONS_TOPIC}`, this.listContentRecommendations),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_OPEN_TOPIC}`, this.openContent),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_OPEN_TOPIC}`, this.withValidation(
+                    "openContent",
+                    this.openContent,
+                    { request: validateOpenContentRequest }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_TELEMETRY_START_TOPIC}`, this.startDeviceTelemetry),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.DEVICE_TELEMETRY_STOP_TOPIC}`, this.stopDeviceTelemetry),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.APP_TELEMETRY_START_TOPIC}`, this.startAppTelemetry),
@@ -102,6 +147,30 @@ export class DabDeviceInterface {
         );
 
         return this.client;
+    }
+
+    withValidation(operation, handler, { request, response } = {}) {
+        return async (data) => {
+            if (request) {
+                const requestError = request(data);
+                if (requestError) {
+                    logger.warn(`Validation failed for ${operation} request: ${requestError}`);
+                    return this.dabResponse(400, requestError);
+                }
+            }
+
+            const result = await handler.call(this, data);
+
+            if (response) {
+                const responseError = response(result);
+                if (responseError) {
+                    logger.error(`Validation failed for ${operation} response: ${responseError}`);
+                    return this.dabResponse(500, `Invalid ${operation} response: ${responseError}`);
+                }
+            }
+
+            return result;
+        };
     }
 
     /**
@@ -279,6 +348,7 @@ export class DabDeviceInterface {
      * @property {string} firmware - Firmware version
      * @property {string} networkConnectivityMode - 'ethernet' | 'wifi' | 'bluetooth'
      * @property {string} macAddress - MAC Address
+     * @property {string} [identifierForAdvertising] - Advertising identifier when available
      */
 
     /**
