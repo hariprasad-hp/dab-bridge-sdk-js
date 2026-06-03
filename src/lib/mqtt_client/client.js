@@ -18,6 +18,7 @@ import { serializeError } from 'serialize-error';
 import { v4 as uuidv4 } from 'uuid';
 import { TimeoutError } from './error.js';
 import { convertPattern } from './util.js';
+import { getRequestTimeoutMs } from '../../interface/dab_operation_timeouts.js';
 import ee2pkg from 'eventemitter2';
 const { EventEmitter2 } = ee2pkg;
 import {getLogger} from "../util.js";
@@ -59,7 +60,7 @@ const logger = getLogger()
  * @class
  * @private
  */
-class Client {
+export class Client {
 
     #client;
     #emitter;
@@ -203,15 +204,16 @@ class Client {
     const requestTopic = `dab/${this.#deviceId}/${topic}`;
     const responseTopic = `_response/${requestTopic}/${requestId}`;
 
-    const timeout = 20000;
-    options = Object.assign(
+    const { timeoutMs, ...mqttOptions } = options || {};
+    const timeout = getRequestTimeoutMs(topic, { timeoutMs });
+    const publishOptions = Object.assign(
       {
           properties: {
             responseTopic: responseTopic,
             correlationData: requestId
           }
       },
-      options
+      mqttOptions
       );
     
 
@@ -237,7 +239,7 @@ class Client {
         reject(new TimeoutError(`Failed to receive response from ${topic} within ${timeout}ms`));
       }, timeout);
 
-      this.publish(requestTopic, payload, options).catch(reject);
+      this.publish(requestTopic, payload, publishOptions).catch(reject);
     });
   }
 
