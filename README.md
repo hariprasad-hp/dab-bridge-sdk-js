@@ -30,6 +30,33 @@ For successful content list/search responses, entries are expected to follow `Co
 - `poster`
 - `categories` (must be valid DAB `ContentCategory` values)
 
+## Migrating from DAB 2.0 to 2.1
+
+DAB 2.1 support is additive in this SDK. Existing DAB 2.0 bridge implementations can continue to return `501 Not implemented` for operations they do not support, while DAB 2.1-capable bridges can implement the expanded operations registered by `DabDeviceInterface`.
+
+Key migration points:
+- `version()` reports both `2.0` and `2.1` support from the base device interface.
+- New DAB 2.1 operation topics are registered during `DabDeviceInterface.init()`.
+- Public `DabClient` helpers are available for application install/uninstall/clear-data, app-store install, power mode, factory/network reset, system log collection, settings, and content operations.
+- Request validation returns `400` for malformed SDK-level payloads before partner operation code runs.
+- Invalid successful partner responses are converted to `500` SDK validation errors.
+
+Timeout behavior:
+- Normal DAB requests keep the existing default request timeout of `20000ms`.
+- Long-running DAB 2.1 operations use operation-specific timeouts where required by the spec, such as application install and factory reset.
+- Callers can override request timeout with `options.timeoutMs`; this option is stripped before MQTT publish options are sent.
+
+Chunked log responses:
+- `system/logs/stop-collection` may return multiple response chunks.
+- The SDK keeps the request open while `remainingChunks` is greater than `0`.
+- `logArchive` chunks are joined in received order and returned as a single response when the final chunk arrives.
+- Error chunks reject the request immediately.
+
+Backward compatibility:
+- Bridges that only implement DAB 2.0 can keep existing partner methods unchanged.
+- Unsupported DAB 2.1 operations should return `501` with an `error` message.
+- Existing DAB 2.0 settings such as `language`, `audioVolume`, and `mute` remain valid in settings validation.
+
 ## Structure Overview
 
 This bridge is split into two primary components:
