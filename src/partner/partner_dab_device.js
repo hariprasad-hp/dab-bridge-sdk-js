@@ -457,6 +457,23 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *       max: int;
      *    },
      *    mute: boolean;
+     *    brightness: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    contrast: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    timeZone: TimeZone [];
+     *    screenSaver: boolean;
+     *    screenSaverTimeout: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    personalizedAds: boolean;
+     *    highContrastText: boolean;
+     *    identifierForAdvertising: boolean;
      *    textToSpeech: boolean;
      * }
      *
@@ -482,7 +499,14 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *    videoInputSource: VideoInputSource;
      *    audioVolume: int;
      *    mute: boolean;
+     *    brightness: int;
+     *    contrast: int;
      *    timeZone: TimeZone;
+     *    screenSaver: boolean;
+     *    screenSaverTimeout: int;
+     *    personalizedAds: boolean;
+     *    highContrastText: boolean;
+     *    identifierForAdvertising: string | null;
      *    textToSpeech: boolean;
      * }
      *
@@ -520,7 +544,7 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *    searchText: string;
      * }
      * @returns interface SearchContentResponse extends DabResponse {
-     *    entries: object [];
+     *    entries: ContentEntry [];
      * }
      */
     searchContent = async (data) => {
@@ -528,9 +552,9 @@ export class PartnerDabDevice extends DabDeviceInterface {
     }
 
     /**
-     * type ListContentRecommendationsRequest = DabRequest
-     * @returns interface ListContentRecommendationsResponse extends DabResponse {
-     *    entries: object [];
+     * type ListRecommendationsContentRequest = DabRequest
+     * @returns interface ListRecommendationsResponse extends DabResponse {
+     *    entries: ContentEntry [];
      * }
      */
     listContentRecommendations = async () => {

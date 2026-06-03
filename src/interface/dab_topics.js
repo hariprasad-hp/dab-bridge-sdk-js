@@ -36,7 +36,6 @@ export const SYSTEM_NETWORK_RESET_TOPIC = "system/network-reset";
 export const SYSTEM_LOGS_START_COLLECTION_TOPIC = "system/logs/start-collection";
 export const SYSTEM_LOGS_STOP_COLLECTION_TOPIC = "system/logs/stop-collection";
 export const DEVICE_CAPTURE_IMAGE = "output/image";
-
 export const CONTENT_SEARCH_TOPIC = "content/search";
 export const CONTENT_RECOMMENDATIONS_TOPIC = "content/recommendations";
 export const CONTENT_OPEN_TOPIC = "content/open";
