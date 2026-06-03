@@ -22,6 +22,7 @@ import ee2pkg from 'eventemitter2';
 const { EventEmitter2 } = ee2pkg;
 import {getLogger} from "../util.js";
 const logger = getLogger()
+const STOP_COLLECTION_TOPIC = "system/logs/stop-collection";
 
 /**
  * @typedef {Object} Message
@@ -217,25 +218,68 @@ class Client {
 
     return new Promise((resolve, reject) => {
       let timer;
+      const isChunkedStopCollectionRequest = topic === STOP_COLLECTION_TOPIC;
+      const stopCollectionChunks = [];
+
+      const scheduleTimeout = () => {
+        timer = setTimeout(async function () {
+          subscription.end();
+          reject(new TimeoutError(`Failed to receive response from ${topic} within ${timeout}ms`));
+        }, timeout);
+      };
+
+      const resolveStopCollectionChunks = () => {
+        if (!stopCollectionChunks.length) {
+          return {status: 200};
+        }
+
+        const firstChunk = stopCollectionChunks[0];
+        const allArchives = stopCollectionChunks
+          .map((chunk) => chunk.logArchive)
+          .filter((archiveChunk) => typeof archiveChunk === "string");
+
+        return {
+          ...firstChunk,
+          logArchive: allArchives.join(""),
+          remainingChunks: 0
+        };
+      };
+
       const subscription = this.subscribe(responseTopic, async function (msg, pkg) {
         // Checks for the correct correlation Data.
         if (pkg.correlationData != requestId) {
           return;
         }
-        subscription.end();
-        clearTimeout(timer);
 
         if (msg.status > 299) {
+          subscription.end();
+          clearTimeout(timer);
           reject(msg);
         } else {
-          resolve(msg);
+          if (!isChunkedStopCollectionRequest) {
+            subscription.end();
+            clearTimeout(timer);
+            resolve(msg);
+            return;
+          }
+
+          stopCollectionChunks.push(msg);
+          const remainingChunks = msg.remainingChunks;
+          const hasMoreChunks = Number.isInteger(remainingChunks) && remainingChunks > 0;
+
+          if (hasMoreChunks) {
+            clearTimeout(timer);
+            scheduleTimeout();
+            return;
+          }
+
+          subscription.end();
+          clearTimeout(timer);
+          resolve(resolveStopCollectionChunks());
         }
       });
 
-      timer = setTimeout(async function () {
-        subscription.end();
-        reject(new TimeoutError(`Failed to receive response from ${topic} within ${timeout}ms`));
-      }, timeout);
+      scheduleTimeout();
 
       this.publish(requestTopic, payload, options).catch(reject);
     });
