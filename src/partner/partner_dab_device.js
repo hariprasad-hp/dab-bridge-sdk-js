@@ -1,5 +1,5 @@
-import {DabDeviceInterface} from "../interface/dab_device_interface.js";
-import {getLogger} from "../lib/util.js";
+import { DabDeviceInterface } from "../interface/dab_device_interface.js";
+import { getLogger } from "../lib/util.js";
 const logger = getLogger();
 
 /*
@@ -167,10 +167,111 @@ export class PartnerDabDevice extends DabDeviceInterface {
     }
 
     /**
+     * @param data interface InstallApplicationRequest extends DabRequest {
+     *    appId: string;
+     *    url: string;
+     *    format?: string;
+     *    timeout?: number;
+     * }
+     * @returns type InstallApplicationResponse = DabResponse
+     */
+    installApp = async (data) => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * @param data interface UninstallApplicationRequest extends DabRequest {
+     *    appId: string;
+     * }
+     * @returns type UninstallApplicationResponse = DabResponse
+     */
+    uninstallApp = async (data) => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * @param data interface ClearApplicationDataRequest extends DabRequest {
+     *    appId: string;
+     * }
+     * @returns type ClearApplicationDataResponse = DabResponse
+     */
+    clearAppData = async (data) => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * @param data interface InstallApplicationFromAppStoreRequest extends DabRequest {
+     *    appId: string;
+     *    appStoreId?: string;
+     * }
+     * @returns type InstallApplicationFromAppStoreResponse = DabResponse
+     */
+    installAppFromStore = async (data) => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
      * type RestartDeviceRequest = DabRequest
      * @returns type RestartDeviceResponse = DabResponse
      */
     restartDevice = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * type GetPowerModeRequest = DabRequest
+     * @returns interface GetPowerModeResponse extends DabResponse {
+     *    powerMode: "Active" | "Standby" | "Deep Sleep";
+     * }
+     */
+    getPowerMode = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * @param data interface SetPowerModeRequest extends DabRequest {
+     *    powerMode: "Active" | "Standby" | "Deep Sleep";
+     * }
+     * @returns interface SetPowerModeResponse extends DabResponse {
+     *    powerMode: "Active" | "Standby" | "Deep Sleep";
+     * }
+     */
+    setPowerMode = async (data) => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * type FactoryResetRequest = DabRequest
+     * @returns type FactoryResetResponse = DabResponse
+     */
+    factoryReset = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * type NetworkResetRequest = DabRequest
+     * @returns type NetworkResetResponse = DabResponse
+     */
+    networkReset = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * type StartSystemLogCollectionRequest = DabRequest
+     * @returns type StartSystemLogCollectionResponse = DabResponse
+     */
+    startSystemLogCollection = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * type StopSystemLogCollectionRequest = DabRequest
+     * @returns interface StopSystemLogCollectionResponse extends DabResponse {
+     *    logArchive?: string;
+     *    remainingChunks?: number;
+     * }
+     */
+    stopSystemLogCollection = async () => {
         return this.dabResponse(501, "Not implemented.");
     }
 
@@ -356,6 +457,23 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *       max: int;
      *    },
      *    mute: boolean;
+     *    brightness: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    contrast: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    timeZone: TimeZone [];
+     *    screenSaver: boolean;
+     *    screenSaverTimeout: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    personalizedAds: boolean;
+     *    highContrastText: boolean;
+     *    identifierForAdvertising: boolean;
      *    textToSpeech: boolean;
      * }
      *
@@ -381,7 +499,14 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *    videoInputSource: VideoInputSource;
      *    audioVolume: int;
      *    mute: boolean;
+     *    brightness: int;
+     *    contrast: int;
      *    timeZone: TimeZone;
+     *    screenSaver: boolean;
+     *    screenSaverTimeout: int;
+     *    personalizedAds: boolean;
+     *    highContrastText: boolean;
+     *    identifierForAdvertising: string | null;
      *    textToSpeech: boolean;
      * }
      *
@@ -411,6 +536,38 @@ export class PartnerDabDevice extends DabDeviceInterface {
      * }
      */
     outputImage = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * @param data interface SearchContentRequest extends DabRequest {
+     *    searchText: string;
+     * }
+     * @returns interface SearchContentResponse extends DabResponse {
+     *    entries: ContentEntry [];
+     * }
+     */
+    searchContent = async (data) => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * type ListContentRecommendationsRequest = DabRequest
+     * @returns interface ListContentRecommendationsResponse extends DabResponse {
+     *    entries: ContentEntry [];
+     * }
+     */
+    listContentRecommendations = async () => {
+        return this.dabResponse(501, "Not implemented.");
+    }
+
+    /**
+     * @param data interface OpenContentRequest extends DabRequest {
+     *    entryId: string;
+     * }
+     * @returns type OpenContentResponse = DabResponse
+     */
+    openContent = async (data) => {
         return this.dabResponse(501, "Not implemented.");
     }
 }

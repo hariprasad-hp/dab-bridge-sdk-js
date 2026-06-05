@@ -1,6 +1,6 @@
 # Device Automation Bus Bridge SDK
 
-This project is a reference template that can be used to develop a DAB Bridge that is compliant with the DAB 2.0 specification.
+This project is a reference template that can be used to develop a DAB Bridge that is compliant with the DAB 2.0 and 2.1 specifications.
 
 More details on the general usage for DAB Bridges can be found in the DAB User Guide.
 
@@ -120,4 +120,3 @@ mosquitto_pub -t dab/device0/applications/launch -m '{ "appId": "Cobalt" }' -D p
 ```
 mosquitto_pub -t dab/device0/system/settings/list -m '{}' -D publish response-topic "my/response/topic"
 ```
-
