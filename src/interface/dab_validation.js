@@ -9,29 +9,31 @@ const CONTENT_CATEGORIES = new Set([
     "Others"
 ]);
 
-const LEGACY_AND_V21_SETTINGS = {
-    language: "language",
-    outputResolution: "string",
-    memc: "boolean",
-    cec: "boolean",
-    lowLatencyMode: "boolean",
-    matchContentFrameRate: "string",
-    hdrOutputMode: "string",
-    pictureMode: "string",
-    audioOutputMode: "string",
-    audioOutputSource: "string",
-    videoInputSource: "string",
-    audioVolume: "integer",
-    mute: "boolean",
-    timeZone: "string",
-    textToSpeech: "boolean",
-    brightness: "integer",
-    contrast: "integer",
-    screenSaver: "boolean",
-    screenSaverTimeout: "integer",
-    personalizedAds: "boolean",
-    highContrastText: "boolean",
-    identifierForAdvertising: "stringOrNull"
+const POWER_MODES = new Set(["Active", "Standby", "Deep Sleep"]);
+
+const SYSTEM_SETTING_VALIDATORS = {
+    language: (value) => typeof value === "string" && value.length > 0,
+    outputResolution: (value) => typeof value === "string" && value.length > 0,
+    memc: (value) => typeof value === "boolean",
+    cec: (value) => typeof value === "boolean",
+    lowLatencyMode: (value) => typeof value === "boolean",
+    matchContentFrameRate: (value) => typeof value === "string" && value.length > 0,
+    hdrOutputMode: (value) => typeof value === "string" && value.length > 0,
+    pictureMode: (value) => typeof value === "string" && value.length > 0,
+    audioOutputMode: (value) => typeof value === "string" && value.length > 0,
+    audioOutputSource: (value) => typeof value === "string" && value.length > 0,
+    videoInputSource: (value) => typeof value === "string" && value.length > 0,
+    audioVolume: (value) => Number.isInteger(value),
+    mute: (value) => typeof value === "boolean",
+    timeZone: (value) => typeof value === "string" && value.length > 0,
+    textToSpeech: (value) => typeof value === "boolean",
+    brightness: (value) => Number.isInteger(value),
+    contrast: (value) => Number.isInteger(value),
+    screenSaver: (value) => typeof value === "boolean",
+    screenSaverTimeout: (value) => Number.isInteger(value),
+    personalizedAds: (value) => typeof value === "boolean",
+    highContrastText: (value) => typeof value === "boolean",
+    identifierForAdvertising: (value) => value === null || hasText(value)
 };
 
 function isObject(value) {
@@ -50,15 +52,6 @@ function isRange(value) {
     return isObject(value) && Number.isInteger(value.min) && Number.isInteger(value.max);
 }
 
-function isExpectedSettingValue(value, expectedType) {
-    if (expectedType === "language") return hasText(value);
-    if (expectedType === "string") return hasText(value);
-    if (expectedType === "boolean") return typeof value === "boolean";
-    if (expectedType === "integer") return Number.isInteger(value);
-    if (expectedType === "stringOrNull") return value === null || hasText(value);
-    return false;
-}
-
 export function validateDabResponse(response) {
     if (!isObject(response)) return "response must be an object";
     if (typeof response.status !== "number") return "response.status must be a number";
@@ -68,18 +61,57 @@ export function validateDabResponse(response) {
     return null;
 }
 
-export function validateSystemSettingsSetRequest(data) {
+export function validateInstallAppRequest(data) {
+    if (!isObject(data)) return "installApp request must be an object";
+    if (!hasText(data.appId)) return "installApp.appId must be a non-empty string";
+    if (!hasText(data.url)) return "installApp.url must be a non-empty string";
+    if (data.format !== undefined && !hasText(data.format)) {
+        return "installApp.format must be a non-empty string when provided";
+    }
+    if (data.timeout !== undefined && (!Number.isInteger(data.timeout) || data.timeout < 0)) {
+        return "installApp.timeout must be a non-negative integer when provided";
+    }
+    return null;
+}
+
+export function validateInstallAppFromStoreRequest(data) {
+    if (!isObject(data)) return "installAppFromStore request must be an object";
+    if (!hasText(data.appId)) return "installAppFromStore.appId must be a non-empty string";
+    if (data.appStoreId !== undefined && !hasText(data.appStoreId)) {
+        return "installAppFromStore.appStoreId must be a non-empty string when provided";
+    }
+    return null;
+}
+
+export function validateSetPowerModeRequest(data) {
+    if (!isObject(data)) return "setPowerMode request must be an object";
+    if (!POWER_MODES.has(data.powerMode)) {
+        return `setPowerMode.powerMode must be one of: ${Array.from(POWER_MODES).join(", ")}`;
+    }
+    return null;
+}
+
+export function validateSetPowerModeResponse(data) {
+    if (!isObject(data)) return "setPowerMode response must be an object";
+    if (typeof data.status !== "number") return "setPowerMode response.status must be a number";
+    if (Math.floor(data.status / 100) === 2 && !POWER_MODES.has(data.powerMode)) {
+        return `setPowerMode response.powerMode must be one of: ${Array.from(POWER_MODES).join(", ")}`;
+    }
+    return null;
+}
+
+export function validateSetSystemSettingsRequest(data) {
     if (!isObject(data)) return "setSystemSettings request must be an object";
+
     const keys = Object.keys(data);
-    if (!keys.length) return "setSystemSettings request cannot be empty";
+    if (keys.length === 0) return "setSystemSettings request cannot be empty";
 
     for (const key of keys) {
-        const expectedType = LEGACY_AND_V21_SETTINGS[key];
-        if (!expectedType) return `Unsupported system setting key: ${key}`;
-        if (!isExpectedSettingValue(data[key], expectedType)) {
-            return `Invalid value for setting '${key}'`;
-        }
+        const validator = SYSTEM_SETTING_VALIDATORS[key];
+        if (!validator) return `setSystemSettings contains unsupported setting key: ${key}`;
+        if (!validator(data[key])) return `setSystemSettings.${key} has invalid value`;
     }
+
     return null;
 }
 
@@ -88,11 +120,12 @@ export function validateSystemSettingsGetResponse(response) {
     if (commonError) return commonError;
     if (Math.floor(response.status / 100) !== 2) return null;
 
-    for (const [key, expectedType] of Object.entries(LEGACY_AND_V21_SETTINGS)) {
-        if (key in response && !isExpectedSettingValue(response[key], expectedType)) {
+    for (const [key, validator] of Object.entries(SYSTEM_SETTING_VALIDATORS)) {
+        if (key in response && !validator(response[key])) {
             return `Invalid value type for system setting '${key}'`;
         }
     }
+
     return null;
 }
 
@@ -128,10 +161,18 @@ export function validateSystemSettingsListResponse(response) {
 
     for (const [key, value] of Object.entries(response)) {
         if (key === "status" || key === "error") continue;
+
         const validator = capabilityValidators[key];
         if (!validator) return `Unsupported settings capability key: ${key}`;
         if (!validator(value)) return `Invalid capability value for '${key}'`;
     }
+
+    return null;
+}
+
+export function validateSearchContentRequest(data) {
+    if (!isObject(data)) return "searchContent request must be an object";
+    if (!hasText(data.searchText)) return "searchContent.searchText must be a non-empty string";
     return null;
 }
 
@@ -142,23 +183,13 @@ function validateContentEntry(entry) {
     if (!hasText(entry.title)) return "content entry.title must be a non-empty string";
     if (!hasText(entry.poster)) return "content entry.poster must be a non-empty string";
     if (!Array.isArray(entry.categories)) return "content entry.categories must be an array";
+
     for (const category of entry.categories) {
         if (!CONTENT_CATEGORIES.has(category)) {
             return `Unsupported content category '${category}'`;
         }
     }
-    return null;
-}
 
-export function validateSearchContentRequest(data) {
-    if (!isObject(data)) return "searchContent request must be an object";
-    if (!hasText(data.searchText)) return "searchContent.searchText must be a non-empty string";
-    return null;
-}
-
-export function validateOpenContentRequest(data) {
-    if (!isObject(data)) return "openContent request must be an object";
-    if (!hasText(data.entryId)) return "openContent.entryId must be a non-empty string";
     return null;
 }
 
@@ -172,6 +203,7 @@ export function validateContentEntriesResponse(response, operationName) {
         const entryError = validateContentEntry(entry);
         if (entryError) return `${operationName} ${entryError}`;
     }
+
     return null;
 }
 
@@ -183,5 +215,28 @@ export function validateContentRecommendationsResponse(response) {
     return validateContentEntriesResponse(response, "contentRecommendations");
 }
 
-export { CONTENT_CATEGORIES };
+export function validateOpenContentRequest(data) {
+    if (!isObject(data)) return "openContent request must be an object";
+    if (!hasText(data.entryId) && !hasText(data.contentId)) {
+        return "openContent requires a non-empty entryId (or contentId)";
+    }
+    return null;
+}
 
+export function validateDeviceInfoResponse(data) {
+    if (!isObject(data)) return "deviceInfo response must be an object";
+    if (typeof data.status !== "number") return "deviceInfo response.status must be a number";
+    if (Math.floor(data.status / 100) !== 2) return null;
+
+    if (
+        "identifierForAdvertising" in data &&
+        data.identifierForAdvertising !== null &&
+        !hasText(data.identifierForAdvertising)
+    ) {
+        return "deviceInfo.identifierForAdvertising must be a non-empty string when provided";
+    }
+
+    return null;
+}
+
+export { CONTENT_CATEGORIES };

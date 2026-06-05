@@ -18,10 +18,12 @@ import { serializeError } from 'serialize-error';
 import { v4 as uuidv4 } from 'uuid';
 import { TimeoutError } from './error.js';
 import { convertPattern } from './util.js';
+import { getRequestTimeoutMs } from '../../interface/dab_operation_timeouts.js';
 import ee2pkg from 'eventemitter2';
 const { EventEmitter2 } = ee2pkg;
 import {getLogger} from "../util.js";
 const logger = getLogger()
+const STOP_COLLECTION_TOPIC = "system/logs/stop-collection";
 
 /**
  * @typedef {Object} Message
@@ -59,7 +61,7 @@ const logger = getLogger()
  * @class
  * @private
  */
-class Client {
+export class Client {
 
     #client;
     #emitter;
@@ -203,41 +205,85 @@ class Client {
     const requestTopic = `dab/${this.#deviceId}/${topic}`;
     const responseTopic = `_response/${requestTopic}/${requestId}`;
 
-    const timeout = 20000;
-    options = Object.assign(
+    const { timeoutMs, ...mqttOptions } = options || {};
+    const timeout = getRequestTimeoutMs(topic, { timeoutMs });
+    const publishOptions = Object.assign(
       {
           properties: {
             responseTopic: responseTopic,
             correlationData: requestId
           }
       },
-      options
+      mqttOptions
       );
     
 
     return new Promise((resolve, reject) => {
       let timer;
+      const isChunkedStopCollectionRequest = topic === STOP_COLLECTION_TOPIC;
+      const stopCollectionChunks = [];
+
+      const scheduleTimeout = () => {
+        timer = setTimeout(async function () {
+          subscription.end();
+          reject(new TimeoutError(`Failed to receive response from ${topic} within ${timeout}ms`));
+        }, timeout);
+      };
+
+      const resolveStopCollectionChunks = () => {
+        if (!stopCollectionChunks.length) {
+          return {status: 200};
+        }
+
+        const firstChunk = stopCollectionChunks[0];
+        const allArchives = stopCollectionChunks
+          .map((chunk) => chunk.logArchive)
+          .filter((archiveChunk) => typeof archiveChunk === "string");
+
+        return {
+          ...firstChunk,
+          logArchive: allArchives.join(""),
+          remainingChunks: 0
+        };
+      };
+
       const subscription = this.subscribe(responseTopic, async function (msg, pkg) {
         // Checks for the correct correlation Data.
         if (pkg.correlationData != requestId) {
           return;
         }
-        subscription.end();
-        clearTimeout(timer);
 
         if (msg.status > 299) {
+          subscription.end();
+          clearTimeout(timer);
           reject(msg);
         } else {
-          resolve(msg);
+          if (!isChunkedStopCollectionRequest) {
+            subscription.end();
+            clearTimeout(timer);
+            resolve(msg);
+            return;
+          }
+
+          stopCollectionChunks.push(msg);
+          const remainingChunks = msg.remainingChunks;
+          const hasMoreChunks = Number.isInteger(remainingChunks) && remainingChunks > 0;
+
+          if (hasMoreChunks) {
+            clearTimeout(timer);
+            scheduleTimeout();
+            return;
+          }
+
+          subscription.end();
+          clearTimeout(timer);
+          resolve(resolveStopCollectionChunks());
         }
       });
 
-      timer = setTimeout(async function () {
-        subscription.end();
-        reject(new TimeoutError(`Failed to receive response from ${topic} within ${timeout}ms`));
-      }, timeout);
+      scheduleTimeout();
 
-      this.publish(requestTopic, payload, options).catch(reject);
+      this.publish(requestTopic, payload, publishOptions).catch(reject);
     });
   }
 
