@@ -14,8 +14,9 @@
  */
 
 import { MqttClient } from '../lib/mqtt_client/index.js';
-import  * as topics  from './dab_topics.js';
+import * as topics from './dab_topics.js';
 import {
+    validateContentRecommendationsResponse,
     validateDeviceInfoResponse,
     validateInstallAppFromStoreRequest,
     validateInstallAppRequest,
@@ -24,10 +25,12 @@ import {
     validateSearchContentResponse,
     validateSetPowerModeRequest,
     validateSetPowerModeResponse,
-    validateSetSystemSettingsRequest
+    validateSetSystemSettingsRequest,
+    validateSystemSettingsGetResponse,
+    validateSystemSettingsListResponse
 } from './dab_validation.js';
-import {getLogger} from "../lib/util.js";
-const logger = getLogger()
+import { getLogger } from "../lib/util.js";
+const logger = getLogger();
 
 export class DabDeviceInterface {
     /**
@@ -82,13 +85,22 @@ export class DabDeviceInterface {
                     { response: validateDeviceInfoResponse }
                 )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_RESTART_TOPIC}`, this.restartDevice),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_LIST_TOPIC}`, this.listSystemSettings),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_GET_TOPIC}`, this.getSystemSettings),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_LIST_TOPIC}`, this.withValidation(
+                    "listSystemSettings",
+                    this.listSystemSettings,
+                    { response: validateSystemSettingsListResponse }
+                )),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_GET_TOPIC}`, this.withValidation(
+                    "getSystemSettings",
+                    this.getSystemSettings,
+                    { response: validateSystemSettingsGetResponse }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_SETTING_SET_TOPIC}`, this.withValidation(
                     "setSystemSettings",
                     this.setSystemSettings,
                     { request: validateSetSystemSettingsRequest }
                 )),
+
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_POWER_MODE_GET_TOPIC}`, this.getPowerMode),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.SYSTEM_POWER_MODE_SET_TOPIC}`, this.withValidation(
                     "setPowerMode",
@@ -114,7 +126,11 @@ export class DabDeviceInterface {
                         response: validateSearchContentResponse
                     }
                 )),
-                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_RECOMMENDATIONS_TOPIC}`, this.listContentRecommendations),
+                this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_RECOMMENDATIONS_TOPIC}`, this.withValidation(
+                    "listContentRecommendations",
+                    this.listContentRecommendations,
+                    { response: validateContentRecommendationsResponse }
+                )),
                 this.client.handle(`dab/${this.dabDeviceID}/${topics.CONTENT_OPEN_TOPIC}`, this.withValidation(
                     "openContent",
                     this.openContent,

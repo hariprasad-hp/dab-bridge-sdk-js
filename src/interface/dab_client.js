@@ -87,6 +87,12 @@ export class DabClient {
         )
     }
 
+    async getSettings() {
+        return await this.client.request(
+            topics.SYSTEM_SETTING_GET_TOPIC
+        )
+    }
+
     async captureImage(url) {
         return await this.client.request(
             topics.DEVICE_CAPTURE_IMAGE,
@@ -172,6 +178,30 @@ export class DabClient {
     async restart(){
         return await this.client.request(
             topics.SYSTEM_RESTART_TOPIC
+        )
+    }
+
+    async searchContent(searchText){
+        return await this.client.request(
+            topics.CONTENT_SEARCH_TOPIC,
+            {
+                searchText: searchText
+            }
+        )
+    }
+
+    async listContentRecommendations(){
+        return await this.client.request(
+            topics.CONTENT_RECOMMENDATIONS_TOPIC
+        )
+    }
+
+    async openContent(entryId){
+        return await this.client.request(
+            topics.CONTENT_OPEN_TOPIC,
+            {
+                entryId: entryId
+            }
         )
     }
 

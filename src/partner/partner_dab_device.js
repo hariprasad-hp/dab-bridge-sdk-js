@@ -1,5 +1,5 @@
-import {DabDeviceInterface} from "../interface/dab_device_interface.js";
-import {getLogger} from "../lib/util.js";
+import { DabDeviceInterface } from "../interface/dab_device_interface.js";
+import { getLogger } from "../lib/util.js";
 const logger = getLogger();
 
 /*
@@ -457,6 +457,23 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *       max: int;
      *    },
      *    mute: boolean;
+     *    brightness: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    contrast: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    timeZone: TimeZone [];
+     *    screenSaver: boolean;
+     *    screenSaverTimeout: {
+     *       min: int;
+     *       max: int;
+     *    };
+     *    personalizedAds: boolean;
+     *    highContrastText: boolean;
+     *    identifierForAdvertising: boolean;
      *    textToSpeech: boolean;
      * }
      *
@@ -482,7 +499,14 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *    videoInputSource: VideoInputSource;
      *    audioVolume: int;
      *    mute: boolean;
+     *    brightness: int;
+     *    contrast: int;
      *    timeZone: TimeZone;
+     *    screenSaver: boolean;
+     *    screenSaverTimeout: int;
+     *    personalizedAds: boolean;
+     *    highContrastText: boolean;
+     *    identifierForAdvertising: string | null;
      *    textToSpeech: boolean;
      * }
      *
@@ -520,7 +544,7 @@ export class PartnerDabDevice extends DabDeviceInterface {
      *    searchText: string;
      * }
      * @returns interface SearchContentResponse extends DabResponse {
-     *    entries: object [];
+     *    entries: ContentEntry [];
      * }
      */
     searchContent = async (data) => {
@@ -530,7 +554,7 @@ export class PartnerDabDevice extends DabDeviceInterface {
     /**
      * type ListContentRecommendationsRequest = DabRequest
      * @returns interface ListContentRecommendationsResponse extends DabResponse {
-     *    entries: object [];
+     *    entries: ContentEntry [];
      * }
      */
     listContentRecommendations = async () => {
