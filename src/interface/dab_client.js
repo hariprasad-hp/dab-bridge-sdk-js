@@ -181,6 +181,85 @@ export class DabClient {
         )
     }
 
+    async installApp(appId, url, format, timeout) {
+        return await this.client.request(
+            topics.APPLICATIONS_INSTALL_TOPIC,
+            {
+                appId: appId,
+                url: url,
+                format: format,
+                timeout: timeout
+            }
+        )
+    }
+
+    async uninstallApp(appId) {
+        return await this.client.request(
+            topics.APPLICATIONS_UNINSTALL_TOPIC,
+            {
+                appId: appId
+            }
+        )
+    }
+
+    async clearAppData(appId) {
+        return await this.client.request(
+            topics.APPLICATIONS_CLEAR_DATA_TOPIC,
+            {
+                appId: appId
+            }
+        )
+    }
+
+    async installAppFromStore(appId, appStoreId) {
+        return await this.client.request(
+            topics.APPLICATIONS_INSTALL_FROM_APP_STORE_TOPIC,
+            {
+                appId: appId,
+                appStoreId: appStoreId
+            }
+        )
+    }
+
+    async getPowerMode(){
+        return await this.client.request(
+            topics.SYSTEM_POWER_MODE_GET_TOPIC
+        )
+    }
+
+    async setPowerMode(powerMode){
+        return await this.client.request(
+            topics.SYSTEM_POWER_MODE_SET_TOPIC,
+            {
+                powerMode: powerMode
+            }
+        )
+    }
+
+    async factoryReset(){
+        return await this.client.request(
+            topics.SYSTEM_FACTORY_RESET_TOPIC
+        )
+    }
+
+    async networkReset(){
+        return await this.client.request(
+            topics.SYSTEM_NETWORK_RESET_TOPIC
+        )
+    }
+
+    async startSystemLogCollection(){
+        return await this.client.request(
+            topics.SYSTEM_LOGS_START_COLLECTION_TOPIC
+        )
+    }
+
+    async stopSystemLogCollection(){
+        return await this.client.request(
+            topics.SYSTEM_LOGS_STOP_COLLECTION_TOPIC
+        )
+    }
+
     async searchContent(searchText){
         return await this.client.request(
             topics.CONTENT_SEARCH_TOPIC,
