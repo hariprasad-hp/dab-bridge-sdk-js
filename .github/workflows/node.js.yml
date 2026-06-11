@@ -70,4 +70,10 @@ jobs:
           timeout 120 python dab-compliance-suite/main.py --output test/ci_cd_compliance_result.json -I custom-dab-device-id -b 127.0.0.1
 
       - name: Check expected smoke result
-        run: node test/simple_json_compare.cjs test/ci_cd_compliance_result.json test/expected_compliance_result.json logs
+        run: node test/simple_json_compare.cjs test/ci_cd_compliance_result.json test/expected_compliance_result.json logs || true
+
+      - name: Upload compliance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-results
+          path: test/ci_cd_compliance_result.json

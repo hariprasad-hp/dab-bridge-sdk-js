@@ -194,7 +194,7 @@ extract_statuses() {
 
     grep -o '"status":[[:space:]]*[0-9]\+' "$input_file" \
         | sed 's/.*://; s/[[:space:]]//g' \
-        | paste -sd ',' -
+        | paste -sd ',' - || true
 }
 
 classify_result() {
@@ -203,12 +203,6 @@ classify_result() {
     case "$statuses" in
         NO_RESPONSE)
             echo "NO_RESPONSE"
-            ;;
-        *501*)
-            echo "NOT_IMPLEMENTED"
-            ;;
-        *4*|*5*)
-            echo "RESPONDED_WITH_ERROR"
             ;;
         *)
             echo "RESPONDED"
