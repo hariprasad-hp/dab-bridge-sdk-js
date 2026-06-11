@@ -42,6 +42,10 @@ class MockDabDevice extends DabDeviceInterface {
   async setSystemSettings(data) {
     return { status: 200, ...data };
   }
+
+  async getPowerMode() {
+    return { status: 200, powerMode: "Standby" };
+  }
 }
 
 describe("DabDeviceInterface DAB 2.1 registration", () => {
@@ -105,5 +109,27 @@ describe("DabDeviceInterface DAB 2.1 registration", () => {
     expect(invalidSearch.status).toBe(400);
     expect(validSearch.status).toBe(200);
     expect(validSearch.entries).toHaveLength(1);
+  });
+
+  test("validates new app id and power mode handlers", async () => {
+    const device = new MockDabDevice("device-1");
+    await device.init("mqtt://broker");
+    const registeredTopics = mqttInstances[0].handlers;
+
+    const uninstallHandler = registeredTopics.get(
+      `dab/device-1/${topics.APPLICATIONS_UNINSTALL_TOPIC}`
+    );
+    const powerModeHandler = registeredTopics.get(
+      `dab/device-1/${topics.SYSTEM_POWER_MODE_GET_TOPIC}`
+    );
+
+    const invalidUninstall = await uninstallHandler({});
+    const validPowerMode = await powerModeHandler({});
+
+    expect(invalidUninstall.status).toBe(400);
+    expect(validPowerMode).toEqual({
+      status: 200,
+      powerMode: "Standby"
+    });
   });
 });

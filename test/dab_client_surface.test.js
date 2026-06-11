@@ -127,4 +127,28 @@ describe("DabClient DAB 2.1 public surface", () => {
       { entryId: "entry-1" }
     );
   });
+
+  test("uses spec field names for telemetry requests", async () => {
+    const { dabClient, mqtt } = createClient();
+
+    await dabClient.startDeviceTelemetry(1000);
+    await dabClient.startAppTelemetry("YouTube", 2000);
+    await dabClient.stopAppTelemetry("YouTube");
+
+    expect(mqtt.request).toHaveBeenNthCalledWith(
+      1,
+      topics.DEVICE_TELEMETRY_START_TOPIC,
+      { duration: 1000 }
+    );
+    expect(mqtt.request).toHaveBeenNthCalledWith(
+      2,
+      topics.APP_TELEMETRY_START_TOPIC,
+      { appId: "YouTube", duration: 2000 }
+    );
+    expect(mqtt.request).toHaveBeenNthCalledWith(
+      3,
+      topics.APP_TELEMETRY_STOP_TOPIC,
+      { appId: "YouTube" }
+    );
+  });
 });

@@ -48,9 +48,9 @@ export class DabClient {
         if (this.deviceTelemetrySub) await this.deviceTelemetrySub.end();
     }
 
-    async showAppTelemetry() {
+    async showAppTelemetry(appId) {
         this.appTelemetrySub = await this.client.subscribe(
-            topics.APP_TELEMETRY_METRICS_TOPIC, async (message) => {
+            `${topics.APP_TELEMETRY_METRICS_TOPIC}/${appId}`, async (message) => {
                 console.log(`App telemetry: ${JSON.stringify(message, null, 2)}\n`);
             }
         );
@@ -141,11 +141,11 @@ export class DabClient {
         )
     }
 
-    async startDeviceTelemetry(frequency){
+    async startDeviceTelemetry(duration){
         return await this.client.request(
             topics.DEVICE_TELEMETRY_START_TOPIC,
             {
-                frequency: frequency
+                duration: duration
             }
         )
     }
@@ -156,12 +156,12 @@ export class DabClient {
         )
     }
 
-    async startAppTelemetry(appId, frequency){
+    async startAppTelemetry(appId, duration){
         return await this.client.request(
             topics.APP_TELEMETRY_START_TOPIC,
             {
-                app: appId,
-                frequency: frequency
+                appId: appId,
+                duration: duration
             }
         )
     }
@@ -170,7 +170,7 @@ export class DabClient {
         return await this.client.request(
             topics.APP_TELEMETRY_STOP_TOPIC,
             {
-                app: appId
+                appId: appId
             }
         )
     }
