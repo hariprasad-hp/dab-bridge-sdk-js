@@ -100,7 +100,7 @@ export function validateSetPowerModeResponse(data) {
     return null;
 }
 
-export function validateSetSystemSettingsRequest(data) {
+export function validateSystemSettingsSetRequest(data) {
     if (!isObject(data)) return "setSystemSettings request must be an object";
 
     const keys = Object.keys(data);
@@ -108,12 +108,17 @@ export function validateSetSystemSettingsRequest(data) {
 
     for (const key of keys) {
         const validator = SYSTEM_SETTING_VALIDATORS[key];
-        if (!validator) return `setSystemSettings contains unsupported setting key: ${key}`;
-        if (!validator(data[key])) return `setSystemSettings.${key} has invalid value`;
+        if (!validator) return `Unsupported system setting key: ${key}`;
+        if (!validator(data[key])) {
+            return `Invalid value for setting '${key}'`;
+        }
     }
 
     return null;
 }
+
+export const validateSetSystemSettingsRequest =
+    validateSystemSettingsSetRequest;
 
 export function validateSystemSettingsGetResponse(response) {
     const commonError = validateDabResponse(response);
