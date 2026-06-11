@@ -26,11 +26,14 @@ Start an MQTT broker:
 mosquitto
 ```
 
-Start the bridge:
+Start the bridge manually if you want to reuse an existing process:
 
 ```bash
 node src/index.js -i template -b mqtt://127.0.0.1:1883
 ```
+
+By default the validation script can also start the local sample bridge
+for you when no bridge is already running.
 
 ## Run Full Validation
 
@@ -39,6 +42,12 @@ node src/index.js -i template -b mqtt://127.0.0.1:1883
 ```
 
 This creates a new folder under `test/evidence/<timestamp>/`.
+
+To force use of an already running bridge:
+
+```bash
+AUTO_START_BRIDGE=0 ./test/run_dab_evidence.sh
+```
 
 ## Run One Operation
 
@@ -72,6 +81,7 @@ Useful raw logs:
 - `test/evidence/<timestamp>/console.log`
 - `test/evidence/<timestamp>/requests.log`
 - `test/evidence/<timestamp>/messages.log`
+- `test/evidence/<timestamp>/bridge.log`
 
 ## Result Meaning
 

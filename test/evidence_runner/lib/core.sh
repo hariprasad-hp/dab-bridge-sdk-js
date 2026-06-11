@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+BRIDGE_PID=""
 
 check_dep() {
     command -v "$1" >/dev/null 2>&1 || {
@@ -34,16 +35,23 @@ prepare_paths() {
     FINAL_JSON="$LOG_DIR/final_results.json"
     RESULTS_TSV="$LOG_DIR/.results.tsv"
     CONSOLE_LOG="$LOG_DIR/console.log"
+    BRIDGE_LOG="$LOG_DIR/bridge.log"
     TMP_DIR="$LOG_DIR/.tmp"
     mkdir -p "$LOG_DIR"
     mkdir -p "$TMP_DIR"
-    touch "$REQ_LOG" "$MESSAGE_LOG" "$RESULTS_TSV" "$CONSOLE_LOG"
+    touch "$REQ_LOG" "$MESSAGE_LOG" "$RESULTS_TSV" "$CONSOLE_LOG" \
+        "$BRIDGE_LOG"
 }
 
 cleanup_runner() {
     if [[ -n "${MESSAGES_PID:-}" ]] && kill -0 "$MESSAGES_PID" >/dev/null 2>&1; then
         kill "$MESSAGES_PID" >/dev/null 2>&1 || true
         wait "$MESSAGES_PID" 2>/dev/null || true
+    fi
+
+    if [[ -n "${BRIDGE_PID:-}" ]] && kill -0 "$BRIDGE_PID" >/dev/null 2>&1; then
+        kill "$BRIDGE_PID" >/dev/null 2>&1 || true
+        wait "$BRIDGE_PID" 2>/dev/null || true
     fi
 }
 
@@ -55,6 +63,87 @@ runner_log() {
 should_run() {
     local name="$1"
     [[ "$RUN_ONLY" == "all" || "$RUN_ONLY" == "$name" ]]
+}
+
+bridge_is_ready() {
+    local response_file="$TMP_DIR/bridge-ready.response.log"
+    local stderr_file="$TMP_DIR/bridge-ready.stderr.log"
+    local sub_rc=0
+
+    : >"$response_file"
+    : >"$stderr_file"
+
+    set +e
+    mosquitto_sub -h "$MQTT_HOST" -p "$MQTT_PORT" -V mqttv5 \
+        -C 1 \
+        -W 2 \
+        -F '%I | %t | %p' \
+        -t "dab/bridge/$BRIDGE_ID/version" >"$response_file" \
+        2>"$stderr_file"
+    sub_rc=$?
+    set -e
+
+    if [[ "$sub_rc" -ne 0 ]]; then
+        return 1
+    fi
+
+    grep -q '"version"' "$response_file"
+}
+
+wait_for_bridge_ready() {
+    local timeout_seconds="$1"
+    local start_time
+    start_time="$(date +%s)"
+
+    while true; do
+        if bridge_is_ready; then
+            return 0
+        fi
+
+        if (( "$(date +%s)" - start_time >= timeout_seconds )); then
+            return 1
+        fi
+
+        sleep 1
+    done
+}
+
+start_bridge_if_needed() {
+    if [[ "${AUTO_START_BRIDGE:-1}" != "1" ]]; then
+        if bridge_is_ready; then
+            ui_kv "Bridge setup" "using existing bridge"
+            runner_log "Bridge already running"
+            return 0
+        fi
+
+        runner_log "Bridge auto-start disabled"
+        ui_write_line "${UI_RED}No running bridge found while AUTO_START_BRIDGE=0.${UI_RESET}" >&2
+        return 1
+    fi
+
+    if bridge_is_ready; then
+        ui_kv "Bridge setup" "using existing bridge"
+        runner_log "Bridge already running"
+        return 0
+    fi
+
+    ui_kv "Bridge setup" "starting local bridge"
+    runner_log "Starting local bridge"
+
+    (
+        cd "$SCRIPT_DIR"
+        node src/index.js -i "$BRIDGE_ID" -b "$BROKER_URI"
+    ) >>"$BRIDGE_LOG" 2>&1 &
+    BRIDGE_PID=$!
+
+    if wait_for_bridge_ready "${BRIDGE_READY_WAIT:-15}"; then
+        runner_log "Bridge is ready"
+        return 0
+    fi
+
+    runner_log "Bridge failed to become ready"
+    ui_write_line "${UI_RED}Bridge did not become ready. See $BRIDGE_LOG${UI_RESET}" >&2
+    return 1
 }
 
 publish_request() {
