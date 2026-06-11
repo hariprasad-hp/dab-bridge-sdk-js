@@ -114,6 +114,22 @@ describe("MQTT request and response flow", () => {
     });
   });
 
+  test("rejects stop collection with broken chunk order", async () => {
+    const { client, sendResponse } = createClient();
+    const requestPromise = client.request(
+      "system/logs/stop-collection",
+      {}
+    );
+
+    await Promise.resolve();
+    sendResponse({ status: 200, logArchive: "chunk-a-", remainingChunks: 2 });
+    sendResponse({ status: 200, logArchive: "chunk-c", remainingChunks: 0 });
+
+    await expect(requestPromise).rejects.toThrow(
+      "Invalid stop-collection chunk sequence"
+    );
+  });
+
   test("times out when stop collection misses the final chunk", async () => {
     jest.useFakeTimers();
 

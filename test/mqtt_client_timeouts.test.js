@@ -12,6 +12,10 @@ describe("DAB 2.1 request timeout behavior", () => {
     expect(getRequestTimeoutMs("applications/install")).toBe(60_000);
   });
 
+  test("system/settings/get timeout is 750 ms", () => {
+    expect(getRequestTimeoutMs("system/settings/get")).toBe(750);
+  });
+
   test("applications/install-from-app-store timeout is 60000 ms", () => {
     expect(getRequestTimeoutMs("applications/install-from-app-store")).toBe(60_000);
   });
